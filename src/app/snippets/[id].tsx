@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -14,7 +15,7 @@ import {
   View,
 } from "react-native";
 import Markdown from "react-native-markdown-display";
-
+import { SafeAreaView } from "react-native-safe-area-context";
 import {
   ApiKeyError,
   generateSnippetExplanation,
@@ -23,10 +24,13 @@ import {
 import { getApiKey } from "../../../src/core/storage/secure";
 import {
   Attachment,
+  deleteSingleAttachment,
   getAttachmentsForSnippet,
+  updateAttachmentRecord,
 } from "../../../src/features/files/repository";
 import { useSettingsStore } from "../../../src/features/settings/store";
 import { useSnippetStore } from "../../../src/features/snippets/store";
+import { useImagePicker } from "../../../src/shared/hooks/useImagePicker";
 import { Colors } from "../../../src/shared/theme/colors";
 import { formatToAppDate } from "../../../src/shared/utils/date";
 import { generateExportFile } from "../../../src/shared/utils/export";
@@ -47,6 +51,8 @@ export default function SnippetDetailsScreen() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const { pickImage } = useImagePicker();
+  const [selectedImage, setSelectedImage] = useState<Attachment | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -160,6 +166,48 @@ export default function SnippetDetailsScreen() {
     }
   };
 
+  const handleReplaceImage = async () => {
+    if (!selectedImage) return;
+
+    const newUri = await pickImage();
+    if (newUri) {
+      try {
+        await updateAttachmentRecord(
+          selectedImage.id,
+          selectedImage.file_name,
+          newUri,
+          snippet.id,
+        );
+        setSelectedImage(null);
+        const data = getAttachmentsForSnippet(snippet.id);
+        setAttachments(data);
+      } catch (e) {
+        Alert.alert("Error", "Failed to replace image.");
+        console.error("Error replacing image:", e);
+      }
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!selectedImage) return;
+
+    Alert.alert("Delete Image", "Remove this attachment permanently?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          await deleteSingleAttachment(
+            selectedImage.id,
+            selectedImage.file_name,
+          );
+          setSelectedImage(null);
+          setAttachments(getAttachmentsForSnippet(snippet.id));
+        },
+      },
+    ]);
+  };
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <View
@@ -243,16 +291,54 @@ export default function SnippetDetailsScreen() {
               style={styles.attachmentScroll}
             >
               {attachments.map((att) => (
-                <Image
+                <TouchableOpacity
                   key={att.id}
-                  source={{ uri: att.file_uri }}
-                  style={[
-                    styles.attachmentImage,
-                    { borderColor: theme.border },
-                  ]}
-                />
+                  onPress={() => setSelectedImage(att)}
+                >
+                  <Image
+                    source={{ uri: att.file_uri }}
+                    style={[
+                      styles.attachmentImage,
+                      { borderColor: theme.border },
+                    ]}
+                  />
+                </TouchableOpacity>
               ))}
             </ScrollView>
+
+            <Modal visible={!!selectedImage} transparent animationType="slide">
+              <SafeAreaView
+                style={[styles.modalContainer, { backgroundColor: "#000" }]}
+              >
+                <View style={styles.modalHeader}>
+                  <TouchableOpacity onPress={() => setSelectedImage(null)}>
+                    <Feather name="x" size={28} color="#fff" />
+                  </TouchableOpacity>
+                  <View style={styles.modalActions}>
+                    <TouchableOpacity
+                      onPress={handleReplaceImage}
+                      style={styles.modalIconBtn}
+                    >
+                      <Feather name="edit-3" size={24} color="#fff" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleDeleteImage}
+                      style={styles.modalIconBtn}
+                    >
+                      <Feather name="trash-2" size={24} color={theme.danger} />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {selectedImage && (
+                  <Image
+                    source={{ uri: selectedImage.file_uri }}
+                    style={styles.fullImage}
+                    resizeMode="contain"
+                  />
+                )}
+              </SafeAreaView>
+            </Modal>
           </>
         )}
 
@@ -459,4 +545,14 @@ const styles = StyleSheet.create({
   aiErrorText: { flex: 1, fontSize: 14 },
   retryBtn: { paddingHorizontal: 12, paddingVertical: 6 },
   markdownWrapper: { padding: 16, borderWidth: 1, borderRadius: 12 },
+  modalContainer: { flex: 1, justifyContent: "center" },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+  },
+  modalActions: { flexDirection: "row" },
+  modalIconBtn: { padding: 10, marginLeft: 12 },
+  fullImage: { flex: 1, width: "100%", height: "100%" },
 });

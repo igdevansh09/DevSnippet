@@ -1,5 +1,8 @@
 import { db } from "@/core/database/sqlite";
-import { deleteAttachment } from "../../core/filesystem/fileManager";
+import {
+  deleteAttachment,
+  saveAttachment,
+} from "../../core/filesystem/fileManager";
 
 export interface Attachment {
   id: string;
@@ -63,6 +66,35 @@ export const getAllAttachments = (): AttachmentWithSnippetInfo[] => {
         JOIN snippets s ON a.snippet_id = s.id
         ORDER BY a.created_at DESC
     `);
+};
+
+export const updateAttachmentRecord = async (
+  attachmentId: string,
+  oldFileName: string,
+  newTempUri: string,
+  snippetId: string,
+): Promise<string> => {
+  await deleteAttachment(oldFileName);
+
+  const extension = newTempUri.split(".").pop() || "jpg";
+  const newFileName = `${snippetId}_${attachmentId}_updated.${extension}`;
+
+  const permanentUri = await saveAttachment(newTempUri, newFileName);
+
+  const statement = db.prepareSync(
+    "UPDATE attachments SET file_name = $file_name, file_uri = $file_uri WHERE id = $id",
+  );
+  try {
+    statement.executeSync({
+      $file_name: newFileName,
+      $file_uri: permanentUri,
+      $id: attachmentId,
+    });
+  } finally {
+    statement.finalizeSync();
+  }
+
+  return permanentUri;
 };
 
 export const deleteSingleAttachment = async (
