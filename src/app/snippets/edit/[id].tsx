@@ -1,48 +1,63 @@
-import { saveAttachment } from "@/core/filesystem/fileManager";
-import { insertAttachmentRecord } from "@/features/files/repository";
-import { useImagePicker } from "@/shared/hooks/useImagePicker";
-import { Feather } from "@expo/vector-icons";
-import * as Crypto from "expo-crypto";
-import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
-  Alert,
-  Image,
+  View,
+  Text,
+  TextInput,
+  StyleSheet,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+  Alert,
 } from "react-native";
-import { useSettingsStore } from "../../../src/features/settings/store";
-import { useSnippetStore } from "../../../src/features/snippets/store";
-import { Colors } from "../../../src/shared/theme/colors";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
+import { useSnippetStore } from "../../../../src/features/snippets/store";
+import { useSettingsStore } from "../../../../src/features/settings/store";
+import { Colors } from "../../../../src/shared/theme/colors";
 
-export default function CreateSnippetScreen() {
+export default function EditSnippetScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const theme = Colors[useSettingsStore().theme];
-  const addSnippet = useSnippetStore((state) => state.addSnippet);
-  const { pickImage } = useImagePicker();
+
+  const snippets = useSnippetStore((state) => state.snippets);
+  const editSnippet = useSnippetStore((state) => state.editSnippet);
+  const existingSnippet = snippets.find((s) => s.id === id);
 
   const [form, setForm] = useState({
-    title: "",
-    language: "",
-    content: "",
-    attachments: [] as string[],
+    title: existingSnippet?.title || "",
+    language: existingSnippet?.language || "",
+    content: existingSnippet?.content || "",
   });
 
   const [currentTag, setCurrentTag] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(
+    existingSnippet?.tags ? JSON.parse(existingSnippet.tags) : [],
+  );
 
-  const handleAttachImage = async () => {
-    const uri = await pickImage();
-    if (uri) {
-      setForm((prev) => ({ ...prev, attachments: [...prev.attachments, uri] }));
-    }
-  };
+  if (!existingSnippet) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.background,
+            justifyContent: "center",
+            alignItems: "center",
+          },
+        ]}
+      >
+        <Text style={{ color: theme.text }}>Snippet not found.</Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={{ marginTop: 16 }}
+        >
+          <Text style={{ color: theme.primary }}>Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const handleAddTag = () => {
     const trimmed = currentTag.trim().toLowerCase();
@@ -56,7 +71,7 @@ export default function CreateSnippetScreen() {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
-  const handleSave = async () => {
+  const handleUpdate = () => {
     if (!form.title.trim()) {
       Alert.alert("Validation Error", "Title is required.");
       return;
@@ -71,35 +86,17 @@ export default function CreateSnippetScreen() {
     }
 
     try {
-      const newId = Crypto.randomUUID();
-
-      addSnippet({
-        id: newId,
+      editSnippet(existingSnippet.id, {
+        id: existingSnippet.id,
         title: form.title.trim(),
         language: form.language.trim(),
         content: form.content,
         tags: JSON.stringify(tags),
       });
 
-      for (const tempUri of form.attachments) {
-        const attachmentId = Crypto.randomUUID();
-
-        const extension = tempUri.split(".").pop() || "jpg";
-        const uniqueFileName = `${newId}_${attachmentId}.${extension}`;
-        const permanentUri = await saveAttachment(tempUri, uniqueFileName);
-
-        insertAttachmentRecord({
-          id: attachmentId,
-          snippet_id: newId,
-          file_name: uniqueFileName,
-          file_uri: permanentUri,
-        });
-      }
-
       router.back();
     } catch (error) {
-      console.error("Error saving the snippet:", error);
-      Alert.alert("Error", "Failed to save the snippet.");
+      Alert.alert("Error", "Failed to update the snippet.");
     }
   };
 
@@ -120,10 +117,12 @@ export default function CreateSnippetScreen() {
           </Text>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.text }]}>
-          New Snippet
+          Edit Snippet
         </Text>
-        <TouchableOpacity onPress={handleSave}>
-          <Text style={[styles.saveText, { color: theme.primary }]}>Save</Text>
+        <TouchableOpacity onPress={handleUpdate}>
+          <Text style={[styles.saveText, { color: theme.primary }]}>
+            Update
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -141,7 +140,7 @@ export default function CreateSnippetScreen() {
               borderColor: theme.border,
             },
           ]}
-          placeholder="e.g., JWT Authentication Middleware"
+          placeholder="Snippet Title"
           placeholderTextColor={theme.textMuted}
           value={form.title}
           onChangeText={(text) => setForm({ ...form, title: text })}
@@ -157,7 +156,7 @@ export default function CreateSnippetScreen() {
               borderColor: theme.border,
             },
           ]}
-          placeholder="e.g., TypeScript, Python, Go"
+          placeholder="Programming Language"
           placeholderTextColor={theme.textMuted}
           value={form.language}
           onChangeText={(text) => setForm({ ...form, language: text })}
@@ -212,34 +211,6 @@ export default function CreateSnippetScreen() {
         )}
 
         <Text style={[styles.label, { color: theme.text, marginTop: 16 }]}>
-          Attachments
-        </Text>
-        <TouchableOpacity
-          onPress={handleAttachImage}
-          style={[
-            styles.attachButton,
-            { backgroundColor: theme.surface, borderColor: theme.border },
-          ]}
-        >
-          <Feather name="image" size={18} color={theme.primary} />
-          <Text style={[styles.attachButtonText, { color: theme.text }]}>
-            Add image attachment
-          </Text>
-        </TouchableOpacity>
-
-        {form.attachments.length > 0 && (
-          <View style={styles.previewGrid}>
-            {form.attachments.map((uri, index) => (
-              <Image
-                key={`${uri}-${index}`}
-                source={{ uri }}
-                style={styles.previewImage}
-              />
-            ))}
-          </View>
-        )}
-
-        <Text style={[styles.label, { color: theme.text, marginTop: 16 }]}>
           Code Content
         </Text>
         <TextInput
@@ -251,8 +222,6 @@ export default function CreateSnippetScreen() {
               borderColor: theme.border,
             },
           ]}
-          placeholder="// Paste or type your code here..."
-          placeholderTextColor={theme.textMuted}
           value={form.content}
           onChangeText={(text) => setForm({ ...form, content: text })}
           multiline
@@ -305,30 +274,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   tagText: { fontSize: 14, fontWeight: "500" },
-  attachButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-  },
-  attachButtonText: { fontSize: 14, fontWeight: "600" },
-  previewGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 10,
-    marginTop: 12,
-  },
-  previewImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
-  },
   codeEditor: {
     borderWidth: 1,
     borderRadius: 8,

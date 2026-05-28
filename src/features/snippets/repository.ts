@@ -66,8 +66,9 @@ export const toggleFavorite = (id: string): void => {
   }
 };
 
-export const deleteSnippet = (id: string): void => {
+export const deleteSnippet = async (id: string): Promise<void> => {
   const statement = db.prepareSync(`DELETE FROM snippets WHERE id = $id`);
+
   try {
     statement.executeSync({
       $id: id,

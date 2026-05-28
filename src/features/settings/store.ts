@@ -39,7 +39,11 @@ export const useSettingsStore = create<SettingsState>((set) => ({
   },
 
   completeOnboarding: async () => {
-    set({ isFirstLaunched: true });
-    await AsyncStorage.setItem("@app_has_launched", "true");
+    try {
+      await AsyncStorage.setItem("@app_has_launched", "true");
+      set({ isFirstLaunched: false });
+    } catch (error) {
+      console.error("Failed to save onboarding state:", error);
+    }
   },
 }));

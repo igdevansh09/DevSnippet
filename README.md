@@ -1,56 +1,179 @@
-# Welcome to your Expo app 👋
+# DevSnippet
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+DevSnippet is a mobile-first Expo app for managing code snippets, attachments, resources, and generated explanations. It is built with Expo Router, React Native, TypeScript, Zustand, and local SQLite storage.
 
-## Get started
+## Demo Video
 
-1. Install dependencies
+> Add a demo video link or file here once available.
+>
+> Suggested demo flow:
+> - Launch the app and open the snippet list
+> - Create a new snippet with title, language, tags, and content
+> - Open snippet details and view attachments
+> - Export the snippet in `.js`, `.json`, `.txt`, `.cpp`, and `.java`
+> - Use the file manager to browse attachments and resource folders
+> - Generate an AI-powered snippet explanation
 
-   ```bash
-   npm install
-   ```
+## Screenshots
 
-2. Start the app
+> Add screenshots here once the app UI is captured.
+>
+> Recommended screenshots:
+> - Snippet list view
+> - Snippet create/edit screen
+> - Snippet details with attachments and export actions
+> - File Manager attachments/resources tabs
+> - AI explanation screen and settings
 
-   ```bash
-   npx expo start
-   ```
+## App Features
 
-In the output, you'll find options to open the app in a
+- Create, edit, delete, and favorite code snippets
+- Store snippet title, body content, language, and tags
+- Attach files to snippets and store attachments locally
+- Built-in file manager for attachments and custom resource directories
+- Download templates, create folders, move files, and delete resources
+- Export snippets into `.js`, `.json`, `.txt`, `.cpp`, and `.java`
+- AI-powered code explanation using Google Gemini
+- Offline-first local persistence with SQLite and AsyncStorage
+- Theme and settings stored locally for fast app startup
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Architecture Overview
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+This project is built with Expo, React Native, and Expo Router. It uses TypeScript and Zustand for local state management.
 
-## Get a fresh project
+### Key directories
 
-When you're ready, run:
+- `src/app/` - app screens and route definitions
+- `src/core/` - app infrastructure for AI, storage, database, filesystem
+- `src/features/` - domain logic for snippets, files, settings
+- `src/shared/` - shared utilities, theme, hooks, and helpers
+
+## Database Structure
+
+The app uses a local SQLite database to persist snippets and attachment metadata.
+
+### `snippets`
+
+- `id TEXT PRIMARY KEY` — unique snippet identifier
+- `title TEXT NOT NULL` — snippet title
+- `content TEXT NOT NULL` — snippet code or text content
+- `language TEXT NOT NULL` — programming language label
+- `tags TEXT NOT NULL` — JSON-encoded tag list
+- `is_favorite INTEGER NOT NULL DEFAULT 0` — favorite flag
+- `created_at INTEGER NOT NULL` — timestamp in milliseconds
+
+### `attachments`
+
+- `id TEXT PRIMARY KEY` — unique attachment identifier
+- `snippet_id TEXT NOT NULL` — foreign key to `snippets.id`
+- `file_name TEXT NOT NULL` — attachment filename
+- `file_uri TEXT NOT NULL` — local file URI for the stored attachment
+- `created_at INTEGER NOT NULL` — timestamp in milliseconds
+
+### Relationships
+
+- `attachments.snippet_id` references `snippets.id`
+- Removing a snippet deletes its associated attachment metadata and files
+
+## Offline Storage Approach
+
+The app is designed to work offline for local snippet management and file access.
+
+- `expo-sqlite` stores snippet data and attachment relationships locally
+- `@react-native-async-storage/async-storage` stores settings such as theme preference and first-launch state
+- `expo-file-system` stores attachments and resource files inside app document storage
+- AI generation is the one network-dependent feature; everything else works offline
+
+## File Management Implementation
+
+The file manager is implemented using Expo's filesystem API.
+
+### Directories
+
+- `app_snippets_attachments` — attachment files for snippets
+- `app_snippets_resources` — user-created folders, downloaded templates, and resource files
+
+### Supported operations
+
+- List and navigate folders
+- Create new folders
+- Download external templates into a target folder
+- Move files between folders
+- Delete files and folders
+
+### Attachment workflow
+
+- Attachments are copied from a temporary source URI to the attachment directory
+- Metadata is saved to the `attachments` SQLite table
+- The snippet detail screen loads attachments for the current snippet
+- Attachments are visible in the file manager and can be removed safely
+
+## AI Integration Workflow
+
+AI explanation is integrated through an external model endpoint.
+
+### How it works
+
+1. The snippet detail screen requests an explanation
+2. The app loads the stored API key from secure storage
+3. It checks network connectivity with `expo-network`
+4. It sends a request to Google Gemini's generation endpoint
+5. The returned explanation is displayed in the app
+
+### Error handling
+
+- Shows an error if the API key is missing
+- Shows an offline error if there is no internet connection
+- Shows a generic explanation failure message for other request issues
+
+## Bonus Features
+
+- Multi-format snippet export including `.cpp` and `.java`
+- AI explanation generation for code snippets
+- Dual-file manager views for attachments and resources
+- Secure theme persistence with AsyncStorage
+- Platform-specific export UI for iOS and Android
+
+## Getting Started
+
+### Install dependencies
 
 ```bash
-npm run reset-project
+npm install
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+### Start the app
 
-### Other setup steps
+```bash
+npx expo start
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+### Run on a device or simulator
 
-## Learn more
+```bash
+npm run android
+npm run ios
+npm run web
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## Notes
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- Configure the AI API key in settings before using the AI explanation feature
+- Local data is preserved across app restarts
+- Replace the demo video and screenshot placeholders with actual media assets for submission
 
-## Join the community
+## Technologies Used
 
-Join our community of developers creating universal apps.
+- Expo SDK 55
+- React Native
+- Expo Router
+- TypeScript
+- Expo SQLite
+- Expo File System
+- Expo Network
+- async-storage
+- Zustand
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Learn More
+
+For Expo docs and platform guides, visit https://docs.expo.dev/.

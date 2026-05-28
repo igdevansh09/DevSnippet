@@ -15,7 +15,7 @@ interface SnippetState {
 
   loadSnippets: () => void;
   addSnippet: (data: DefaultSnippet) => void;
-  removeSnippet: (id: string) => void;
+  removeSnippet: (id: string) => Promise<void>;
   editSnippet: (id: string, data: DefaultSnippet) => void;
   toggleFavorite: (id: string) => void;
 }
@@ -46,9 +46,9 @@ export const useSnippetStore = create<SnippetState>((set, get) => ({
     }
   },
 
-  removeSnippet: (id: string) => {
+  removeSnippet: async (id: string) => {
     try {
-      deleteSnippet(id);
+      await deleteSnippet(id);
       get().loadSnippets();
     } catch (error) {
       console.error("Failed to delete snippet:", error);
