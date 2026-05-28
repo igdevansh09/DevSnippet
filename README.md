@@ -10,9 +10,9 @@ https://youtu.be/hFZWu8juZr4?si=VY4yzI4LPAthmrWI
 
 ### App walkthrough
 
-| Snippet list                                         | File manager                                          | AI explanation                                             |
+| Snippet list                                         | File manager                                          | Settings                                             |
 | ---------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------- |
-| ![Snippet List](assets/images/screenshots/home.jpeg) | ![File Manager](assets/images/screenshots/files.jpeg) | ![AI Explanation](assets/images/screenshots/settings.jpeg) |
+| ![Home Screen](assets/images/screenshots/home.jpeg) | ![File Manager](assets/images/screenshots/files.jpeg) | ![Settings](assets/images/screenshots/settings.jpeg) |
 
 ### Additional screens
 
