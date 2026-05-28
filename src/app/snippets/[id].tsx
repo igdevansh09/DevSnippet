@@ -53,6 +53,7 @@ export default function SnippetDetailsScreen() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const { pickImage } = useImagePicker();
   const [selectedImage, setSelectedImage] = useState<Attachment | null>(null);
+  const [exportModalVisible, setExportModalVisible] = useState(false);
 
   useFocusEffect(
     useCallback(() => {
@@ -79,41 +80,30 @@ export default function SnippetDetailsScreen() {
 
   const tags = snippet.tags ? JSON.parse(snippet.tags) : [];
 
-  const handleExport = () => {
-    const options = [
-      "Cancel",
-      "Export as .js",
-      "Export as .json",
-      "Export as .txt",
-      "Export as .cpp",
-      "Export as .java",
-    ];
-    const formats: ("js" | "json" | "txt" | "cpp" | "java")[] = [
-      "js",
-      "json",
-      "txt",
-      "cpp",
-      "java",
-    ];
+  const exportOptions = [
+    { label: "Export as .js", format: "js" as const },
+    { label: "Export as .json", format: "json" as const },
+    { label: "Export as .txt", format: "txt" as const },
+    { label: "Export as .cpp", format: "cpp" as const },
+    { label: "Export as .java", format: "java" as const },
+  ];
 
+  const handleExport = () => {
     if (Platform.OS === "ios") {
+      const options = [
+        "Cancel",
+        ...exportOptions.map((option) => option.label),
+      ];
       ActionSheetIOS.showActionSheetWithOptions(
         { options, cancelButtonIndex: 0 },
         async (buttonIndex) => {
           if (buttonIndex > 0) {
-            executeExport(formats[buttonIndex - 1]);
+            executeExport(exportOptions[buttonIndex - 1].format);
           }
         },
       );
     } else {
-      Alert.alert("Select Format", "Choose an export format", [
-        { text: ".js", onPress: () => executeExport("js") },
-        { text: ".json", onPress: () => executeExport("json") },
-        { text: ".txt", onPress: () => executeExport("txt") },
-        { text: ".cpp", onPress: () => executeExport("cpp") },
-        { text: ".java", onPress: () => executeExport("java") },
-        { text: "Cancel", style: "cancel" },
-      ]);
+      setExportModalVisible(true);
     }
   };
 
@@ -454,6 +444,55 @@ export default function SnippetDetailsScreen() {
           </View>
         )}
 
+        <Modal visible={exportModalVisible} transparent animationType="fade">
+          <SafeAreaView style={styles.exportModalOverlay}>
+            <View
+              style={[
+                styles.exportModalCard,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}
+            >
+              <Text style={[styles.exportModalTitle, { color: theme.text }]}>
+                Select export format
+              </Text>
+              {exportOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.format}
+                  onPress={async () => {
+                    setExportModalVisible(false);
+                    await executeExport(option.format);
+                  }}
+                  style={styles.exportModalOption}
+                >
+                  <Text
+                    style={[
+                      styles.exportModalOptionText,
+                      { color: theme.text },
+                    ]}
+                  >
+                    {" "}
+                    {option.label}{" "}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+              <TouchableOpacity
+                onPress={() => setExportModalVisible(false)}
+                style={styles.exportModalCancel}
+              >
+                <Text
+                  style={{
+                    color: theme.primary,
+                    fontSize: 16,
+                    fontWeight: "600",
+                  }}
+                >
+                  Cancel
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
+        </Modal>
+
         <View style={{ height: 40 }} />
       </ScrollView>
     </View>
@@ -555,4 +594,35 @@ const styles = StyleSheet.create({
   modalActions: { flexDirection: "row" },
   modalIconBtn: { padding: 10, marginLeft: 12 },
   fullImage: { flex: 1, width: "100%", height: "100%" },
+  exportModalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  exportModalCard: {
+    width: "100%",
+    borderWidth: 1,
+    borderRadius: 16,
+    padding: 20,
+  },
+  exportModalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 16,
+  },
+  exportModalOption: {
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.08)",
+  },
+  exportModalOptionText: {
+    fontSize: 16,
+  },
+  exportModalCancel: {
+    marginTop: 12,
+    alignItems: "center",
+    paddingVertical: 14,
+  },
 });

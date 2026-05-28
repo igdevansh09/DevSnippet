@@ -4,26 +4,21 @@ DevSnippet is a mobile-first Expo app for managing code snippets, attachments, r
 
 ## Demo Video
 
-> Add a demo video link or file here once available.
->
-> Suggested demo flow:
-> - Launch the app and open the snippet list
-> - Create a new snippet with title, language, tags, and content
-> - Open snippet details and view attachments
-> - Export the snippet in `.js`, `.json`, `.txt`, `.cpp`, and `.java`
-> - Use the file manager to browse attachments and resource folders
-> - Generate an AI-powered snippet explanation
+https://youtu.be/hFZWu8juZr4?si=VY4yzI4LPAthmrWI
 
 ## Screenshots
 
-> Add screenshots here once the app UI is captured.
->
-> Recommended screenshots:
-> - Snippet list view
-> - Snippet create/edit screen
-> - Snippet details with attachments and export actions
-> - File Manager attachments/resources tabs
-> - AI explanation screen and settings
+### App walkthrough
+
+| Snippet list                                         | File manager                                          | AI explanation                                             |
+| ---------------------------------------------------- | ----------------------------------------------------- | ---------------------------------------------------------- |
+| ![Snippet List](assets/images/screenshots/home.jpeg) | ![File Manager](assets/images/screenshots/files.jpeg) | ![AI Explanation](assets/images/screenshots/settings.jpeg) |
+
+### Additional screens
+
+| Favorites                                               | Onboarding                                               | Settings                                             |
+| ------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------- |
+| ![Favorites](assets/images/screenshots/favourites.jpeg) | ![Onboarding](assets/images/screenshots/onboarding.jpeg) | ![Settings](assets/images/screenshots/settings.jpeg) |
 
 ## App Features
 
