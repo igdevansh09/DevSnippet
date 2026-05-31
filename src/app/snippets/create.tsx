@@ -1,6 +1,3 @@
-import { saveAttachment } from "@/core/filesystem/fileManager";
-import { insertAttachmentRecord } from "@/features/files/repository";
-import { useImagePicker } from "@/shared/hooks/useImagePicker";
 import { Feather } from "@expo/vector-icons";
 import * as Crypto from "expo-crypto";
 import { useRouter } from "expo-router";
@@ -17,12 +14,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useSettingsStore } from "../../../src/features/settings/store";
-import { useSnippetStore } from "../../../src/features/snippets/store";
-import { Colors } from "../../../src/shared/theme/colors";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { saveAttachment } from "../../core/filesystem/fileManager";
+import { insertAttachmentRecord } from "../../features/files/repository";
+import { useSettingsStore } from "../../features/settings/store";
+import { useSnippetStore } from "../../features/snippets/store";
+import { useImagePicker } from "../../shared/hooks/useImagePicker";
+import { Colors } from "../../shared/theme/colors";
 
 export default function CreateSnippetScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const theme = Colors[useSettingsStore().theme];
   const addSnippet = useSnippetStore((state) => state.addSnippet);
   const { pickImage } = useImagePicker();
@@ -83,9 +85,9 @@ export default function CreateSnippetScreen() {
 
       for (const tempUri of form.attachments) {
         const attachmentId = Crypto.randomUUID();
-
         const extension = tempUri.split(".").pop() || "jpg";
         const uniqueFileName = `${newId}_${attachmentId}.${extension}`;
+
         const permanentUri = await saveAttachment(tempUri, uniqueFileName);
 
         insertAttachmentRecord({
@@ -111,18 +113,23 @@ export default function CreateSnippetScreen() {
       <View
         style={[
           styles.header,
-          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+          { backgroundColor: theme.background, paddingTop: insets.top + 16 },
         ]}
       >
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.headerButton}
+        >
           <Text style={[styles.cancelText, { color: theme.textMuted }]}>
             Cancel
           </Text>
         </TouchableOpacity>
+
         <Text style={[styles.headerTitle, { color: theme.text }]}>
           New Snippet
         </Text>
-        <TouchableOpacity onPress={handleSave}>
+
+        <TouchableOpacity onPress={handleSave} style={styles.headerButton}>
           <Text style={[styles.saveText, { color: theme.primary }]}>Save</Text>
         </TouchableOpacity>
       </View>
@@ -130,60 +137,59 @@ export default function CreateSnippetScreen() {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <Text style={[styles.label, { color: theme.text }]}>Title</Text>
         <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: theme.surface,
-              color: theme.text,
-              borderColor: theme.border,
-            },
-          ]}
-          placeholder="e.g., JWT Authentication Middleware"
+          style={[styles.titleInput, { color: theme.text }]}
+          placeholder="Snippet Title..."
           placeholderTextColor={theme.textMuted}
           value={form.title}
           onChangeText={(text) => setForm({ ...form, title: text })}
+          autoFocus
         />
 
-        <Text style={[styles.label, { color: theme.text }]}>Language</Text>
-        <TextInput
-          style={[
-            styles.input,
-            {
-              backgroundColor: theme.surface,
-              color: theme.text,
-              borderColor: theme.border,
-            },
-          ]}
-          placeholder="e.g., TypeScript, Python, Go"
-          placeholderTextColor={theme.textMuted}
-          value={form.language}
-          onChangeText={(text) => setForm({ ...form, language: text })}
-          autoCapitalize="words"
-        />
+        <View style={styles.metaRow}>
+          <View
+            style={[
+              styles.metaInputContainer,
+              { backgroundColor: theme.surface, borderColor: theme.border },
+            ]}
+          >
+            <Feather name="code" size={16} color={theme.textMuted} />
+            <TextInput
+              style={[styles.metaInput, { color: theme.text }]}
+              placeholder="Language (e.g. React)"
+              placeholderTextColor={theme.textMuted}
+              value={form.language}
+              onChangeText={(text) => setForm({ ...form, language: text })}
+              autoCapitalize="words"
+            />
+          </View>
+        </View>
 
-        <Text style={[styles.label, { color: theme.text }]}>Tags</Text>
         <View
           style={[
             styles.tagInputContainer,
             { backgroundColor: theme.surface, borderColor: theme.border },
           ]}
         >
+          <Feather name="hash" size={16} color={theme.textMuted} />
           <TextInput
             style={[styles.tagInput, { color: theme.text }]}
-            placeholder="Add a tag..."
+            placeholder="Add tags..."
             placeholderTextColor={theme.textMuted}
             value={currentTag}
             onChangeText={setCurrentTag}
             onSubmitEditing={handleAddTag}
             blurOnSubmit={false}
             autoCapitalize="none"
+            returnKeyType="done"
           />
-          <TouchableOpacity onPress={handleAddTag} style={styles.addTagBtn}>
-            <Feather name="plus-circle" size={20} color={theme.primary} />
-          </TouchableOpacity>
+          {currentTag.length > 0 && (
+            <TouchableOpacity onPress={handleAddTag} style={styles.addTagBtn}>
+              <Feather name="plus" size={20} color={theme.primary} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {tags.length > 0 && (
@@ -193,148 +199,256 @@ export default function CreateSnippetScreen() {
                 key={tag}
                 style={[
                   styles.tagBadge,
-                  { backgroundColor: theme.primaryMuted },
+                  { backgroundColor: theme.surface, borderColor: theme.border },
                 ]}
                 onPress={() => removeTag(tag)}
+                activeOpacity={0.7}
               >
-                <Text style={[styles.tagText, { color: theme.primary }]}>
+                <Text style={[styles.tagText, { color: theme.text }]}>
                   {tag}
                 </Text>
                 <Feather
                   name="x"
                   size={14}
-                  color={theme.primary}
-                  style={{ marginLeft: 4 }}
+                  color={theme.textMuted}
+                  style={styles.tagRemoveIcon}
                 />
               </TouchableOpacity>
             ))}
           </View>
         )}
 
-        <Text style={[styles.label, { color: theme.text, marginTop: 16 }]}>
-          Attachments
-        </Text>
-        <TouchableOpacity
-          onPress={handleAttachImage}
+        <View
           style={[
-            styles.attachButton,
-            { backgroundColor: theme.surface, borderColor: theme.border },
+            styles.editorContainer,
+            {
+              backgroundColor: theme.codeBackground,
+              borderColor: theme.border,
+            },
           ]}
         >
-          <Feather name="image" size={18} color={theme.primary} />
-          <Text style={[styles.attachButtonText, { color: theme.text }]}>
-            Add image attachment
-          </Text>
-        </TouchableOpacity>
+          <View
+            style={[styles.editorHeader, { borderBottomColor: theme.border }]}
+          >
+            <Text style={[styles.editorLabel, { color: theme.textMuted }]}>
+              CODE
+            </Text>
+            <TouchableOpacity
+              onPress={handleAttachImage}
+              style={styles.attachMiniBtn}
+            >
+              <Feather name="image" size={16} color={theme.primary} />
+              <Text style={[styles.attachMiniText, { color: theme.primary }]}>
+                Attach
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <TextInput
+            style={[styles.codeEditor, { color: theme.text }]}
+            placeholder="// Paste your flawless logic here..."
+            placeholderTextColor={theme.textMuted}
+            value={form.content}
+            onChangeText={(text) => setForm({ ...form, content: text })}
+            multiline
+            textAlignVertical="top"
+            autoCapitalize="none"
+            autoCorrect={false}
+            spellCheck={false}
+          />
+        </View>
 
         {form.attachments.length > 0 && (
           <View style={styles.previewGrid}>
             {form.attachments.map((uri, index) => (
-              <Image
+              <View
                 key={`${uri}-${index}`}
-                source={{ uri }}
-                style={styles.previewImage}
-              />
+                style={[
+                  styles.previewImageContainer,
+                  { borderColor: theme.border },
+                ]}
+              >
+                <Image source={{ uri }} style={styles.previewImage} />
+                <TouchableOpacity
+                  style={[
+                    styles.removeImageBtn,
+                    { backgroundColor: theme.danger },
+                  ]}
+                  onPress={() =>
+                    setForm((prev) => ({
+                      ...prev,
+                      attachments: prev.attachments.filter(
+                        (_, i) => i !== index,
+                      ),
+                    }))
+                  }
+                >
+                  <Feather name="x" size={14} color="#fff" />
+                </TouchableOpacity>
+              </View>
             ))}
           </View>
         )}
-
-        <Text style={[styles.label, { color: theme.text, marginTop: 16 }]}>
-          Code Content
-        </Text>
-        <TextInput
-          style={[
-            styles.codeEditor,
-            {
-              backgroundColor: theme.codeBackground,
-              color: theme.text,
-              borderColor: theme.border,
-            },
-          ]}
-          placeholder="// Paste or type your code here..."
-          placeholderTextColor={theme.textMuted}
-          value={form.content}
-          onChangeText={(text) => setForm({ ...form, content: text })}
-          multiline
-          textAlignVertical="top"
-          autoCapitalize="none"
-          autoCorrect={false}
-          spellCheck={false}
-        />
       </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    flex: 1,
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
-    paddingTop: 60,
-    borderBottomWidth: 1,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
   },
-  headerTitle: { fontSize: 18, fontWeight: "600" },
-  cancelText: { fontSize: 16 },
-  saveText: { fontSize: 16, fontWeight: "600" },
-  scrollContent: { padding: 16, paddingBottom: 40 },
-  label: { fontSize: 14, fontWeight: "600", marginBottom: 8, marginTop: 16 },
-  input: { borderWidth: 1, borderRadius: 8, padding: 14, fontSize: 16 },
+  headerButton: {
+    paddingVertical: 8,
+    minWidth: 60,
+  },
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+  },
+  cancelText: {
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  saveText: {
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "right",
+  },
+  scrollContent: {
+    padding: 20,
+    paddingBottom: 80,
+  },
+  titleInput: {
+    fontSize: 32,
+    fontWeight: "800",
+    marginBottom: 24,
+  },
+  metaRow: {
+    marginBottom: 16,
+  },
+  metaInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 52,
+  },
+  metaInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: "600",
+  },
   tagInputContainer: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 8,
-    paddingRight: 12,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    height: 52,
   },
-  tagInput: { flex: 1, padding: 14, fontSize: 16 },
-  addTagBtn: { padding: 4 },
+  tagInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+  },
+  addTagBtn: {
+    padding: 4,
+  },
   tagsWrapper: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 8,
-    marginTop: 12,
+    marginTop: 16,
   },
   tagBadge: {
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    marginRight: 10,
+    marginBottom: 10,
   },
-  tagText: { fontSize: 14, fontWeight: "500" },
-  attachButton: {
+  tagText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  tagRemoveIcon: {
+    marginLeft: 8,
+  },
+  editorContainer: {
+    marginTop: 24,
+    borderWidth: 1,
+    borderRadius: 16,
+    overflow: "hidden",
+  },
+  editorHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  editorLabel: {
+    fontSize: 12,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  attachMiniBtn: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    paddingHorizontal: 6,
   },
-  attachButtonText: { fontSize: 14, fontWeight: "600" },
+  attachMiniText: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
+  codeEditor: {
+    padding: 20,
+    fontSize: 15,
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    minHeight: 250,
+    lineHeight: 24,
+  },
   previewGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    gap: 10,
-    marginTop: 12,
+    marginTop: 24,
+  },
+  previewImageContainer: {
+    position: "relative",
+    borderWidth: 1,
+    borderRadius: 12,
+    marginRight: 16,
+    marginBottom: 16,
   },
   previewImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.08)",
+    width: 100,
+    height: 100,
+    borderRadius: 11,
   },
-  codeEditor: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 16,
-    fontSize: 14,
-    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-    minHeight: 300,
+  removeImageBtn: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: "#000",
   },
 });

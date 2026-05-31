@@ -7,6 +7,7 @@ import {
   Alert,
   FlatList,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,7 +15,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import {
   createResourceFolder,
   deleteResource,
@@ -29,6 +33,7 @@ import { formatToAppDate } from "../../../src/shared/utils/date";
 
 export default function FileManagerScreen() {
   const theme = Colors[useSettingsStore().theme];
+  const insets = useSafeAreaInsets();
 
   const [currentPath, setCurrentPath] = useState(resourcesDirectory.uri);
   const [pathHistory, setPathHistory] = useState<string[]>([]);
@@ -89,7 +94,6 @@ export default function FileManagerScreen() {
           "Read Error",
           "Cannot display this file format. It may be a binary or corrupted file.",
         );
-        console.error(error);
       }
     }
   };
@@ -119,7 +123,6 @@ export default function FileManagerScreen() {
       loadResources(currentPath);
     } catch (error) {
       Alert.alert("Error", "Could not delete file.");
-      console.error(error);
     }
   };
 
@@ -149,7 +152,6 @@ export default function FileManagerScreen() {
         "Action Failed",
         "Please verify your input and target directories exist.",
       );
-      console.error(error);
     } finally {
       setInputValue("");
       setSecondaryInput("");
@@ -167,98 +169,119 @@ export default function FileManagerScreen() {
       onPress={() => handleResourceTap(item)}
       activeOpacity={0.7}
     >
-      <Feather
-        name={item.isDirectory ? "folder" : "file-text"}
-        size={32}
-        color={item.isDirectory ? theme.primary : theme.textMuted}
-        style={styles.thumbnailPlaceholder}
-      />
+      <View
+        style={[
+          styles.iconContainer,
+          {
+            backgroundColor: item.isDirectory
+              ? `${theme.primary}15`
+              : theme.codeBackground,
+          },
+        ]}
+      >
+        <Feather
+          name={item.isDirectory ? "folder" : "file-text"}
+          size={24}
+          color={item.isDirectory ? theme.primary : theme.textMuted}
+        />
+      </View>
       <View style={styles.info}>
         <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
           {item.name}
         </Text>
-        {!item.isDirectory && (
-          <Text style={[styles.subtitle, { color: theme.textMuted }]}>
-            {(item.size / 1024).toFixed(1)} KB
-          </Text>
-        )}
-        {item.modificationTime && (
-          <Text style={[styles.date, { color: theme.textMuted }]}>
-            {formatToAppDate(item.modificationTime * 1000)}
-          </Text>
-        )}
+        <View style={styles.metaRow}>
+          {!item.isDirectory && (
+            <Text style={[styles.subtitle, { color: theme.textMuted }]}>
+              {(item.size / 1024).toFixed(1)} KB
+            </Text>
+          )}
+          {item.modificationTime && (
+            <Text style={[styles.date, { color: theme.textMuted }]}>
+              {item.isDirectory ? "" : " • "}
+              {formatToAppDate(item.modificationTime * 1000)}
+            </Text>
+          )}
+        </View>
       </View>
 
       <TouchableOpacity
         style={styles.optionsBtn}
         onPress={() => handleOpenOptions(item)}
-        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        hitSlop={{ top: 15, bottom: 15, left: 15, right: 15 }}
       >
         <Feather name="more-vertical" size={20} color={theme.textMuted} />
       </TouchableOpacity>
     </TouchableOpacity>
   );
 
+  const currentFolderName =
+    currentPath === resourcesDirectory.uri
+      ? "Root"
+      : currentPath.split("/").filter(Boolean).pop() || "Folder";
+
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
+      {/* Dynamic Header respecting Insets and standard Typography */}
       <View
         style={[
           styles.header,
-          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+          { backgroundColor: theme.background, paddingTop: insets.top + 16 },
         ]}
       >
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Resource Explorer
-        </Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Files</Text>
+
+        {/* Breadcrumb Trail */}
+        <View style={styles.breadcrumbRow}>
+          <TouchableOpacity
+            onPress={navigateUp}
+            disabled={pathHistory.length === 0}
+            style={styles.breadcrumbBack}
+          >
+            <Feather
+              name="chevron-left"
+              size={20}
+              color={pathHistory.length === 0 ? theme.border : theme.primary}
+            />
+          </TouchableOpacity>
+          <Feather name="folder" size={14} color={theme.textMuted} />
+          <Text style={[styles.breadcrumbText, { color: theme.textMuted }]}>
+            {currentFolderName}
+          </Text>
+        </View>
       </View>
 
       <View style={[styles.toolbar, { borderBottomColor: theme.border }]}>
         <TouchableOpacity
-          onPress={navigateUp}
-          disabled={pathHistory.length === 0}
+          onPress={() => {
+            setModalType("folder");
+            setModalVisible(true);
+          }}
+          style={[
+            styles.toolbarBtn,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+          ]}
         >
-          <Feather
-            name="corner-left-up"
-            size={24}
-            color={pathHistory.length === 0 ? theme.border : theme.text}
-          />
+          <Feather name="folder-plus" size={16} color={theme.text} />
+          <Text style={[styles.toolbarBtnText, { color: theme.text }]}>
+            New Folder
+          </Text>
         </TouchableOpacity>
-        <View style={styles.toolbarActions}>
-          <TouchableOpacity
-            onPress={() => {
-              setModalType("folder");
-              setModalVisible(true);
-            }}
-            style={[
-              styles.toolbarBtn,
-              { backgroundColor: theme.surface, borderColor: theme.border },
-            ]}
-          >
-            <Feather name="folder-plus" size={16} color={theme.text} />
-            <Text style={{ color: theme.text, marginLeft: 6, fontSize: 13 }}>
-              New Folder
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => {
-              setModalType("download");
-              setModalVisible(true);
-            }}
-            style={[
-              styles.toolbarBtn,
-              {
-                backgroundColor: theme.surface,
-                borderColor: theme.border,
-                marginLeft: 8,
-              },
-            ]}
-          >
-            <Feather name="download-cloud" size={16} color={theme.text} />
-            <Text style={{ color: theme.text, marginLeft: 6, fontSize: 13 }}>
-              Fetch File
-            </Text>
-          </TouchableOpacity>
-        </View>
+
+        <TouchableOpacity
+          onPress={() => {
+            setModalType("download");
+            setModalVisible(true);
+          }}
+          style={[
+            styles.toolbarBtn,
+            { backgroundColor: theme.surface, borderColor: theme.border },
+          ]}
+        >
+          <Feather name="download-cloud" size={16} color={theme.text} />
+          <Text style={[styles.toolbarBtnText, { color: theme.text }]}>
+            Fetch File
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {isLoading ? (
@@ -273,6 +296,7 @@ export default function FileManagerScreen() {
           keyExtractor={(item) => item.uri}
           renderItem={renderResource}
           contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
           ListEmptyComponent={() => (
             <View style={styles.emptyContainer}>
               <Feather
@@ -289,8 +313,11 @@ export default function FileManagerScreen() {
         />
       )}
 
+      {/* Input Modal */}
       <Modal visible={modalVisible} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
+        <View
+          style={[styles.modalOverlay, { backgroundColor: "rgba(0,0,0,0.7)" }]}
+        >
           <View
             style={[
               styles.modalCard,
@@ -312,6 +339,7 @@ export default function FileManagerScreen() {
                   {
                     color: theme.text,
                     borderColor: theme.border,
+                    backgroundColor: theme.background,
                     marginBottom: 12,
                   },
                 ]}
@@ -326,13 +354,17 @@ export default function FileManagerScreen() {
             <TextInput
               style={[
                 styles.modalInput,
-                { color: theme.text, borderColor: theme.border },
+                {
+                  color: theme.text,
+                  borderColor: theme.border,
+                  backgroundColor: theme.background,
+                },
               ]}
               placeholder={
                 modalType === "folder"
                   ? "Folder Name"
                   : modalType === "download"
-                    ? "Save As (e.g., template.js)"
+                    ? "Save As (e.g., config.json)"
                     : "Target Folder Name"
               }
               placeholderTextColor={theme.textMuted}
@@ -350,18 +382,24 @@ export default function FileManagerScreen() {
                   setInputValue("");
                   setSecondaryInput("");
                 }}
-                style={{ padding: 12 }}
+                style={styles.cancelBtn}
               >
-                <Text style={{ color: theme.textMuted, fontSize: 16 }}>
+                <Text
+                  style={{
+                    color: theme.textMuted,
+                    fontSize: 16,
+                    fontWeight: "600",
+                  }}
+                >
                   Cancel
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={submitModal}
-                style={[styles.modalBtn, { backgroundColor: theme.primary }]}
+                style={[styles.submitBtn, { backgroundColor: theme.primary }]}
               >
                 <Text
-                  style={{ color: "#fff", fontSize: 16, fontWeight: "600" }}
+                  style={{ color: "#fff", fontSize: 16, fontWeight: "700" }}
                 >
                   Confirm
                 </Text>
@@ -371,6 +409,7 @@ export default function FileManagerScreen() {
         </View>
       </Modal>
 
+      {/* File Viewer Modal */}
       <Modal visible={!!filePreview} animationType="slide">
         <SafeAreaView style={{ flex: 1, backgroundColor: theme.background }}>
           <View
@@ -386,10 +425,15 @@ export default function FileManagerScreen() {
               onPress={() => setFilePreview(null)}
               style={{ padding: 8 }}
             >
-              <Feather name="x" size={24} color={theme.text} />
+              <Feather name="x" size={24} color={theme.textMuted} />
             </TouchableOpacity>
           </View>
-          <ScrollView style={styles.viewerScroll}>
+          <ScrollView
+            style={[
+              styles.viewerScroll,
+              { backgroundColor: theme.codeBackground },
+            ]}
+          >
             <Text style={[styles.viewerText, { color: theme.text }]}>
               {filePreview?.content}
             </Text>
@@ -402,84 +446,116 @@ export default function FileManagerScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: { padding: 16, paddingTop: 60, borderBottomWidth: 1 },
+  header: {
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+  },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "700",
+    fontSize: 32, // Realigned to Dashboard scale
+    fontWeight: "800",
     letterSpacing: -0.5,
-    marginBottom: 8,
+    marginBottom: 12,
+  },
+  breadcrumbRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  breadcrumbBack: {
+    paddingRight: 8,
+  },
+  breadcrumbText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   toolbar: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 12,
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
     borderBottomWidth: 1,
   },
-  toolbarActions: { flexDirection: "row" },
   toolbarBtn: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    justifyContent: "center",
+    paddingVertical: 12,
     borderWidth: 1,
-    borderRadius: 6,
+    borderRadius: 12, // Match rounded system
+    gap: 8,
   },
-  listContent: { padding: 16, paddingBottom: 100 },
+  toolbarBtnText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  listContent: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 120, // Accommodate tab bar
+  },
   card: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 12,
     marginBottom: 12,
   },
-  thumbnailPlaceholder: { width: 50, textAlign: "center", marginRight: 12 },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 16,
+  },
   info: { flex: 1, justifyContent: "center" },
-  title: { fontSize: 16, fontWeight: "600", marginBottom: 4 },
-  subtitle: { fontSize: 13, fontWeight: "500", marginBottom: 4 },
-  date: { fontSize: 12 },
+  title: { fontSize: 16, fontWeight: "700", marginBottom: 4 },
+  metaRow: { flexDirection: "row", alignItems: "center" },
+  subtitle: { fontSize: 13, fontWeight: "600" },
+  date: { fontSize: 13, fontWeight: "500" },
   optionsBtn: { padding: 8 },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 100,
+    marginTop: 80,
   },
   emptyTitle: { fontSize: 18, fontWeight: "600" },
 
-  // Input Modal Styles
+  // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     padding: 24,
   },
   modalCard: {
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
+    borderRadius: 20,
+    padding: 24,
   },
-  modalTitle: { fontSize: 18, fontWeight: "700", marginBottom: 16 },
-  modalInput: { borderWidth: 1, borderRadius: 8, padding: 14, fontSize: 15 },
+  modalTitle: { fontSize: 20, fontWeight: "800", marginBottom: 20 },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+  },
   modalActions: {
     flexDirection: "row",
     justifyContent: "flex-end",
     marginTop: 24,
-    alignItems: "center",
+    gap: 12,
   },
-  modalBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginLeft: 16,
+  cancelBtn: { paddingVertical: 14, paddingHorizontal: 16 },
+  submitBtn: {
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
   },
 
-  // Viewer Modal Styles
+  // Viewer
   viewerHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -487,7 +563,11 @@ const styles = StyleSheet.create({
     padding: 16,
     borderBottomWidth: 1,
   },
-  viewerTitle: { fontSize: 18, fontWeight: "600", flex: 1, marginRight: 16 },
-  viewerScroll: { flex: 1, padding: 16 },
-  viewerText: { fontFamily: "monospace", fontSize: 13, lineHeight: 20 },
+  viewerTitle: { fontSize: 16, fontWeight: "700", flex: 1, marginRight: 16 },
+  viewerScroll: { flex: 1, padding: 20 },
+  viewerText: {
+    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+    fontSize: 14,
+    lineHeight: 22,
+  },
 });

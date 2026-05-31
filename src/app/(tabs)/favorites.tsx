@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Feather } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useSnippetStore } from "../../../src/features/snippets/store";
 import { useSettingsStore } from "../../../src/features/settings/store";
 import { SnippetCard } from "../../../src/features/snippets/components/SnippetCard";
@@ -17,6 +18,7 @@ import { Colors } from "../../../src/shared/theme/colors";
 
 export default function FavoritesScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const theme = Colors[useSettingsStore().theme];
   const allSnippets = useSnippetStore((state) => state.snippets);
 
@@ -50,20 +52,21 @@ export default function FavoritesScreen() {
           style={{ marginBottom: 16 }}
         />
         <Text style={[styles.emptyTitle, { color: theme.text }]}>
-          {hasNoFavoritesAtAll ? "No Favorites Yet" : "No Results Found"}
+          {hasNoFavoritesAtAll ? "No Saved Snippets" : "No Results Found"}
         </Text>
         <Text style={[styles.emptySubtitle, { color: theme.textMuted }]}>
           {hasNoFavoritesAtAll
             ? "Tap the star icon on any snippet to save it here for quick access."
-            : `No favorited snippets match "${debouncedSearch}".`}
+            : `No saved snippets match "${debouncedSearch}".`}
         </Text>
 
         {hasNoFavoritesAtAll && (
           <TouchableOpacity
             style={[styles.emptyButton, { backgroundColor: theme.primary }]}
             onPress={() => router.push("/(tabs)")}
+            activeOpacity={0.8}
           >
-            <Text style={styles.emptyButtonText}>Browse Snippets</Text>
+            <Text style={styles.emptyButtonText}>Browse Library</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -75,24 +78,22 @@ export default function FavoritesScreen() {
       <View
         style={[
           styles.header,
-          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+          { paddingTop: insets.top + 16, backgroundColor: theme.background },
         ]}
       >
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          Favorites
-        </Text>
+        <Text style={[styles.headerTitle, { color: theme.text }]}>Saved</Text>
 
         {favoriteSnippets.length > 0 && (
           <View
             style={[
               styles.searchBox,
-              { backgroundColor: theme.background, borderColor: theme.border },
+              { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
           >
             <Feather name="search" size={18} color={theme.textMuted} />
             <TextInput
               style={[styles.searchInput, { color: theme.text }]}
-              placeholder="Search favorites..."
+              placeholder="Search saved snippets..."
               placeholderTextColor={theme.textMuted}
               value={searchText}
               onChangeText={setSearchText}
@@ -100,7 +101,10 @@ export default function FavoritesScreen() {
               autoCapitalize="none"
             />
             {searchText.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchText("")}>
+              <TouchableOpacity
+                onPress={() => setSearchText("")}
+                style={{ padding: 4 }}
+              >
                 <Feather name="x-circle" size={18} color={theme.textMuted} />
               </TouchableOpacity>
             )}
@@ -114,44 +118,69 @@ export default function FavoritesScreen() {
         renderItem={({ item }) => <SnippetCard snippet={item} />}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={renderEmptyState}
+        showsVerticalScrollIndicator={false}
       />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: { padding: 16, paddingTop: 60, borderBottomWidth: 1 },
+  container: {
+    flex: 1,
+  },
+  header: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginBottom: 16,
+    fontSize: 32, // Matched to Dashboard scale
+    fontWeight: "800",
+    marginBottom: 20,
     letterSpacing: -0.5,
   },
   searchBox: {
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    height: 44,
+    borderRadius: 16, // Matched to Dashboard standard
+    paddingHorizontal: 16,
+    height: 52, // Matched to Dashboard standard
   },
-  searchInput: { flex: 1, marginLeft: 8, fontSize: 16 },
-  listContent: { padding: 16, paddingBottom: 100 },
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  listContent: {
+    paddingBottom: 120, // Accommodate standard bottom tab bar
+  },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: 100,
-    padding: 24,
+    marginTop: 80,
+    paddingHorizontal: 24,
   },
-  emptyTitle: { fontSize: 20, fontWeight: "600", marginBottom: 8 },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
   emptySubtitle: {
-    fontSize: 16,
+    fontSize: 15,
     textAlign: "center",
     marginBottom: 24,
     lineHeight: 22,
   },
-  emptyButton: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8 },
-  emptyButtonText: { color: "#ffffff", fontSize: 16, fontWeight: "600" },
+  emptyButton: {
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  emptyButtonText: {
+    color: "#ffffff",
+    fontSize: 15,
+    fontWeight: "700",
+  },
 });

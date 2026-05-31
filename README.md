@@ -4,7 +4,7 @@ DevSnippet is a mobile-first Expo app for managing code snippets, attachments, r
 
 ## Demo Video
 
-https://youtu.be/hFZWu8juZr4?si=VY4yzI4LPAthmrWI
+https://youtube.com/shorts/0dd67KA9ZsA?si=bc8TdoM0EkIWOSpN
 
 ## Screenshots
 
@@ -18,7 +18,7 @@ https://youtu.be/hFZWu8juZr4?si=VY4yzI4LPAthmrWI
 
 | Favorites                                               | Onboarding                                               | Settings                                             |
 | ------------------------------------------------------- | -------------------------------------------------------- | ---------------------------------------------------- |
-| ![Favorites](assets/images/screenshots/favourites.jpeg) | ![Onboarding](assets/images/screenshots/onboarding.jpeg) | ![Settings](assets/images/screenshots/settings.jpeg) |
+| ![Favorites](assets/images/screenshots/favourites.jpeg) | ![Onboarding](assets/images/screenshots/onboarding.jpeg) | ![Create](assets/images/screenshots/create.jpg) |
 
 ## App Features
 

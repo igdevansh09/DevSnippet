@@ -15,7 +15,10 @@ import {
   View,
 } from "react-native";
 import Markdown from "react-native-markdown-display";
-import { SafeAreaView } from "react-native-safe-area-context";
+import {
+  SafeAreaView,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
 import {
   ApiKeyError,
   generateSnippetExplanation,
@@ -32,13 +35,14 @@ import { useSettingsStore } from "../../../src/features/settings/store";
 import { useSnippetStore } from "../../../src/features/snippets/store";
 import { useImagePicker } from "../../../src/shared/hooks/useImagePicker";
 import { Colors } from "../../../src/shared/theme/colors";
-import { formatToAppDate } from "../../../src/shared/utils/date";
 import { generateExportFile } from "../../../src/shared/utils/export";
 import { shareFile } from "../../../src/shared/utils/share";
+import { formatToAppDate } from "@/shared/utils/date";
 
 export default function SnippetDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const theme = Colors[useSettingsStore().theme];
 
   const snippets = useSnippetStore((state) => state.snippets);
@@ -67,12 +71,14 @@ export default function SnippetDetailsScreen() {
   if (!snippet) {
     return (
       <View style={[styles.center, { backgroundColor: theme.background }]}>
-        <Text style={{ color: theme.text }}>Snippet not found.</Text>
+        <Text style={{ color: theme.text, fontSize: 16, fontWeight: "600" }}>
+          Snippet not found.
+        </Text>
         <TouchableOpacity
           onPress={() => router.back()}
           style={{ marginTop: 16 }}
         >
-          <Text style={{ color: theme.primary }}>Go Back</Text>
+          <Text style={{ color: theme.primary, fontSize: 16 }}>Go Back</Text>
         </TouchableOpacity>
       </View>
     );
@@ -169,8 +175,7 @@ export default function SnippetDetailsScreen() {
           snippet.id,
         );
         setSelectedImage(null);
-        const data = getAttachmentsForSnippet(snippet.id);
-        setAttachments(data);
+        setAttachments(getAttachmentsForSnippet(snippet.id));
       } catch (e) {
         Alert.alert("Error", "Failed to replace image.");
         console.error("Error replacing image:", e);
@@ -203,19 +208,18 @@ export default function SnippetDetailsScreen() {
       <View
         style={[
           styles.header,
-          { backgroundColor: theme.surface, borderBottomColor: theme.border },
+          { backgroundColor: theme.background, paddingTop: insets.top + 16 },
         ]}
       >
-        <TouchableOpacity onPress={() => router.back()}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.iconBtn}>
           <Feather name="arrow-left" size={24} color={theme.text} />
         </TouchableOpacity>
         <View style={styles.headerRight}>
-          {/* THE NEW EDIT BUTTON */}
           <TouchableOpacity
             onPress={() => router.push(`/snippets/edit/${snippet.id}`)}
             style={styles.iconBtn}
           >
-            <Feather name="edit-2" size={20} color={theme.textMuted} />
+            <Feather name="edit-2" size={20} color={theme.text} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => toggleFavorite(snippet.id)}
@@ -224,11 +228,11 @@ export default function SnippetDetailsScreen() {
             <Feather
               name="star"
               size={20}
-              color={snippet.is_favorite === 1 ? "#e3b341" : theme.textMuted}
+              color={snippet.is_favorite === 1 ? theme.primary : theme.text}
             />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleExport} style={styles.iconBtn}>
-            <Feather name="share" size={20} color={theme.textMuted} />
+            <Feather name="share" size={20} color={theme.text} />
           </TouchableOpacity>
           <TouchableOpacity onPress={handleDelete} style={styles.iconBtn}>
             <Feather name="trash-2" size={20} color={theme.danger} />
@@ -236,22 +240,33 @@ export default function SnippetDetailsScreen() {
         </View>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
         <Text style={[styles.title, { color: theme.text }]}>
           {snippet.title}
         </Text>
 
         <View style={styles.metaRow}>
-          <Text
+          <View
             style={[
               styles.languageBadge,
-              { color: theme.primary, backgroundColor: theme.primaryMuted },
+              { backgroundColor: theme.surface, borderColor: theme.border },
             ]}
           >
-            {snippet.language}
-          </Text>
+            <View
+              style={[
+                styles.languageIndicator,
+                { backgroundColor: theme.primary },
+              ]}
+            />
+            <Text style={[styles.languageText, { color: theme.text }]}>
+              {snippet.language}
+            </Text>
+          </View>
           <Text style={[styles.date, { color: theme.textMuted }]}>
-            Created: {formatToAppDate(snippet.created_at)}
+            {formatToAppDate(snippet.created_at) || snippet.created_at}
           </Text>
         </View>
 
@@ -260,10 +275,13 @@ export default function SnippetDetailsScreen() {
             {tags.map((tag: string) => (
               <View
                 key={tag}
-                style={[styles.tag, { backgroundColor: theme.codeBackground }]}
+                style={[
+                  styles.tag,
+                  { backgroundColor: theme.surface, borderColor: theme.border },
+                ]}
               >
                 <Text style={[styles.tagText, { color: theme.textMuted }]}>
-                  {tag}
+                  #{tag}
                 </Text>
               </View>
             ))}
@@ -271,7 +289,7 @@ export default function SnippetDetailsScreen() {
         )}
 
         {attachments.length > 0 && (
-          <>
+          <View style={styles.section}>
             <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
               ATTACHMENTS
             </Text>
@@ -296,12 +314,18 @@ export default function SnippetDetailsScreen() {
               ))}
             </ScrollView>
 
-            <Modal visible={!!selectedImage} transparent animationType="slide">
+            <Modal visible={!!selectedImage} transparent animationType="fade">
               <SafeAreaView
-                style={[styles.modalContainer, { backgroundColor: "#000" }]}
+                style={[
+                  styles.modalContainer,
+                  { backgroundColor: "rgba(0,0,0,0.95)" },
+                ]}
               >
                 <View style={styles.modalHeader}>
-                  <TouchableOpacity onPress={() => setSelectedImage(null)}>
+                  <TouchableOpacity
+                    onPress={() => setSelectedImage(null)}
+                    style={styles.modalIconBtn}
+                  >
                     <Feather name="x" size={28} color="#fff" />
                   </TouchableOpacity>
                   <View style={styles.modalActions}>
@@ -319,7 +343,6 @@ export default function SnippetDetailsScreen() {
                     </TouchableOpacity>
                   </View>
                 </View>
-
                 {selectedImage && (
                   <Image
                     source={{ uri: selectedImage.file_uri }}
@@ -329,123 +352,137 @@ export default function SnippetDetailsScreen() {
                 )}
               </SafeAreaView>
             </Modal>
-          </>
+          </View>
         )}
 
-        <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
-          CODE
-        </Text>
-        <View
-          style={[
-            styles.codeWrapper,
-            {
-              borderColor: theme.border,
-              backgroundColor: theme.codeBackground,
-            },
-          ]}
-        >
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ padding: 16, minWidth: "100%" }}>
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
+            CODE
+          </Text>
+          <View
+            style={[
+              styles.codeWrapper,
+              {
+                backgroundColor: theme.codeBackground,
+                borderColor: theme.border,
+              },
+            ]}
+          >
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={styles.codeInnerPadding}>
+                <Markdown
+                  style={{
+                    body: { color: theme.text, margin: 0, padding: 0 },
+                    fence: {
+                      fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
+                      fontSize: 14,
+                      lineHeight: 22,
+                      color: theme.text,
+                      backgroundColor: "transparent",
+                      borderWidth: 0,
+                      margin: 0,
+                      padding: 0,
+                    },
+                  }}
+                >
+                  {`\`\`\`${snippet.language.toLowerCase()}\n${snippet.content}\n\`\`\``}
+                </Markdown>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: theme.textMuted }]}>
+            AI ANALYSIS
+          </Text>
+
+          {!explanation && !isGenerating && !aiError && (
+            <TouchableOpacity
+              style={[
+                styles.aiButton,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}
+              onPress={handleGenerateAI}
+            >
+              <Feather name="cpu" size={20} color={theme.primary} />
+              <Text style={[styles.aiButtonText, { color: theme.text }]}>
+                Explain Code
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {isGenerating && (
+            <View
+              style={[
+                styles.aiStateCard,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}
+            >
+              <ActivityIndicator color={theme.primary} />
+              <Text style={[styles.aiStateText, { color: theme.textMuted }]}>
+                Analyzing logic...
+              </Text>
+            </View>
+          )}
+
+          {aiError && (
+            <View
+              style={[
+                styles.aiStateCard,
+                { backgroundColor: theme.surface, borderColor: theme.danger },
+              ]}
+            >
+              <Feather name="alert-circle" size={20} color={theme.danger} />
+              <Text style={[styles.aiErrorText, { color: theme.danger }]}>
+                {aiError}
+              </Text>
+              <TouchableOpacity
+                onPress={handleGenerateAI}
+                style={styles.retryBtn}
+              >
+                <Text style={{ color: theme.text, fontWeight: "700" }}>
+                  Retry
+                </Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+          {explanation && (
+            <View
+              style={[
+                styles.markdownWrapper,
+                { backgroundColor: theme.surface, borderColor: theme.border },
+              ]}
+            >
               <Markdown
                 style={{
-                  body: { color: theme.text, margin: 0, padding: 0 },
-                  fence: {
-                    fontFamily: Platform.OS === "ios" ? "Menlo" : "monospace",
-                    fontSize: 14,
-                    color: theme.text,
-                    backgroundColor: "transparent",
-                    borderWidth: 0,
-                    margin: 0,
-                    padding: 0,
+                  body: { color: theme.text, fontSize: 15, lineHeight: 24 },
+                  code_block: {
+                    backgroundColor: theme.codeBackground,
+                    borderRadius: 8,
+                    padding: 12,
+                  },
+                  heading3: {
+                    marginTop: 16,
+                    marginBottom: 8,
+                    fontWeight: "700",
                   },
                 }}
               >
-                {`\`\`\`${snippet.language.toLowerCase()}\n${snippet.content}\n\`\`\``}
+                {explanation}
               </Markdown>
             </View>
-          </ScrollView>
+          )}
         </View>
 
-        <Text
-          style={[
-            styles.sectionLabel,
-            { color: theme.textMuted, marginTop: 24 },
-          ]}
-        >
-          AI ANALYSIS
-        </Text>
-
-        {!explanation && !isGenerating && !aiError && (
-          <TouchableOpacity
-            style={[
-              styles.aiButton,
-              { backgroundColor: theme.surface, borderColor: theme.border },
-            ]}
-            onPress={handleGenerateAI}
-          >
-            <Feather name="cpu" size={20} color={theme.primary} />
-            <Text style={[styles.aiButtonText, { color: theme.primary }]}>
-              Generate Explanation
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        {isGenerating && (
-          <View
-            style={[
-              styles.aiLoading,
-              { backgroundColor: theme.surface, borderColor: theme.border },
-            ]}
-          >
-            <ActivityIndicator color={theme.primary} />
-            <Text style={[styles.aiLoadingText, { color: theme.textMuted }]}>
-              Analyzing code...
-            </Text>
-          </View>
-        )}
-
-        {aiError && (
-          <View
-            style={[
-              styles.aiError,
-              { backgroundColor: theme.surface, borderColor: theme.danger },
-            ]}
-          >
-            <Feather name="alert-circle" size={20} color={theme.danger} />
-            <Text style={[styles.aiErrorText, { color: theme.danger }]}>
-              {aiError}
-            </Text>
-            <TouchableOpacity
-              onPress={handleGenerateAI}
-              style={styles.retryBtn}
-            >
-              <Text style={{ color: theme.primary, fontWeight: "600" }}>
-                Retry
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {explanation && (
-          <View
-            style={[
-              styles.markdownWrapper,
-              { backgroundColor: theme.surface, borderColor: theme.border },
-            ]}
-          >
-            <Markdown
-              style={{
-                body: { color: theme.text },
-                code_block: { backgroundColor: theme.codeBackground },
-              }}
-            >
-              {explanation}
-            </Markdown>
-          </View>
-        )}
-
         <Modal visible={exportModalVisible} transparent animationType="fade">
-          <SafeAreaView style={styles.exportModalOverlay}>
+          <SafeAreaView
+            style={[
+              styles.exportModalOverlay,
+              { backgroundColor: "rgba(0,0,0,0.6)" },
+            ]}
+          >
             <View
               style={[
                 styles.exportModalCard,
@@ -453,7 +490,7 @@ export default function SnippetDetailsScreen() {
               ]}
             >
               <Text style={[styles.exportModalTitle, { color: theme.text }]}>
-                Select export format
+                Select Format
               </Text>
               {exportOptions.map((option) => (
                 <TouchableOpacity
@@ -462,7 +499,10 @@ export default function SnippetDetailsScreen() {
                     setExportModalVisible(false);
                     await executeExport(option.format);
                   }}
-                  style={styles.exportModalOption}
+                  style={[
+                    styles.exportModalOption,
+                    { borderBottomColor: theme.border },
+                  ]}
                 >
                   <Text
                     style={[
@@ -470,8 +510,7 @@ export default function SnippetDetailsScreen() {
                       { color: theme.text },
                     ]}
                   >
-                    {" "}
-                    {option.label}{" "}
+                    {option.label}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -483,7 +522,7 @@ export default function SnippetDetailsScreen() {
                   style={{
                     color: theme.primary,
                     fontSize: 16,
-                    fontWeight: "600",
+                    fontWeight: "700",
                   }}
                 >
                   Cancel
@@ -492,8 +531,6 @@ export default function SnippetDetailsScreen() {
             </View>
           </SafeAreaView>
         </Modal>
-
-        <View style={{ height: 40 }} />
       </ScrollView>
     </View>
   );
@@ -506,97 +543,105 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
-    paddingTop: 60,
-    borderBottomWidth: 1,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
   },
-  headerRight: { flexDirection: "row", gap: 16 },
-  iconBtn: { padding: 4 },
-  content: { padding: 16 },
-  title: { fontSize: 24, fontWeight: "700", marginBottom: 12 },
+  headerRight: { flexDirection: "row", gap: 8 },
+  iconBtn: { padding: 8 },
+  content: { padding: 24, paddingBottom: 60 },
+  title: {
+    fontSize: 32,
+    fontWeight: "800",
+    marginBottom: 16,
+    letterSpacing: -0.5,
+  },
   metaRow: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 16,
+    marginBottom: 20,
   },
   languageBadge: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    fontWeight: "600",
-    fontSize: 13,
-    overflow: "hidden",
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 8,
   },
-  date: { fontSize: 13 },
+  languageIndicator: { width: 8, height: 8, borderRadius: 4 },
+  languageText: { fontWeight: "700", fontSize: 13 },
+  date: { fontSize: 13, fontWeight: "500" },
   tagsContainer: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 8,
-    marginBottom: 24,
+    marginBottom: 32,
   },
-  tag: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  tagText: { fontSize: 12 },
+  tag: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+  },
+  tagText: { fontSize: 12, fontWeight: "600" },
+  section: { marginBottom: 32 },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 1,
-    marginBottom: 8,
+    fontWeight: "800",
+    letterSpacing: 1.5,
+    marginBottom: 12,
   },
-  attachmentScroll: { marginBottom: 24 },
+  attachmentScroll: { flexDirection: "row" },
   attachmentImage: {
-    width: 120,
-    height: 120,
-    borderRadius: 8,
+    width: 140,
+    height: 140,
+    borderRadius: 12,
     borderWidth: 1,
-    marginRight: 12,
-    backgroundColor: "#000",
+    marginRight: 16,
   },
-  codeWrapper: { borderWidth: 1, borderRadius: 12, overflow: "hidden" },
+  codeWrapper: { borderWidth: 1, borderRadius: 16, overflow: "hidden" },
+  codeInnerPadding: { padding: 20, minWidth: "100%" },
   aiButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    padding: 16,
+    paddingVertical: 16,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: 16,
     gap: 12,
   },
-  aiButtonText: { fontSize: 16, fontWeight: "600" },
-  aiLoading: {
+  aiButtonText: { fontSize: 15, fontWeight: "700" },
+  aiStateCard: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
+    padding: 20,
     borderWidth: 1,
-    borderRadius: 12,
-    gap: 12,
+    borderRadius: 16,
+    gap: 16,
   },
-  aiLoadingText: { fontSize: 15 },
-  aiError: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 16,
-    borderWidth: 1,
-    borderRadius: 12,
-    gap: 12,
-  },
-  aiErrorText: { flex: 1, fontSize: 14 },
-  retryBtn: { paddingHorizontal: 12, paddingVertical: 6 },
-  markdownWrapper: { padding: 16, borderWidth: 1, borderRadius: 12 },
-  modalContainer: { flex: 1, justifyContent: "center" },
+  aiStateText: { fontSize: 15, fontWeight: "500" },
+  aiErrorText: { flex: 1, fontSize: 14, lineHeight: 20 },
+  retryBtn: { padding: 8 },
+  markdownWrapper: { padding: 20, borderWidth: 1, borderRadius: 16 },
+  modalContainer: { flex: 1, justifyContent: "flex-start" },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: 20,
+    zIndex: 10,
   },
-  modalActions: { flexDirection: "row" },
-  modalIconBtn: { padding: 10, marginLeft: 12 },
-  fullImage: { flex: 1, width: "100%", height: "100%" },
+  modalActions: { flexDirection: "row", gap: 8 },
+  modalIconBtn: {
+    padding: 12,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 12,
+  },
+  fullImage: { position: "absolute", width: "100%", height: "100%", zIndex: 1 },
   exportModalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "center",
     alignItems: "center",
     padding: 24,
@@ -604,25 +649,25 @@ const styles = StyleSheet.create({
   exportModalCard: {
     width: "100%",
     borderWidth: 1,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 20,
+    padding: 24,
   },
   exportModalTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+    fontSize: 20,
+    fontWeight: "800",
     marginBottom: 16,
   },
   exportModalOption: {
-    paddingVertical: 14,
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.08)",
   },
   exportModalOptionText: {
     fontSize: 16,
+    fontWeight: "500",
   },
   exportModalCancel: {
-    marginTop: 12,
+    marginTop: 16,
     alignItems: "center",
-    paddingVertical: 14,
+    paddingVertical: 16,
   },
 });

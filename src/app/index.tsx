@@ -26,246 +26,119 @@ export default function Index() {
 
   const styles = useMemo(() => getStyles(theme), [theme]);
 
-  const slides = useMemo(
-    () => [
-      {
-        eyebrow: "Organize faster",
-        title: "Capture the code ideas you love.",
-        description:
-          "Collect snippets, annotate them, and revisit your best work in seconds.",
-        accent: theme.primary,
-      },
-      {
-        eyebrow: "Work smarter",
-        title: "Build a personal snippet library.",
-        description:
-          "Search, favorite, and share clean code blocks without losing your flow.",
-        accent: theme.success,
-      },
-      {
-        eyebrow: "Ship with confidence",
-        title: "Keep your workflow polished and focused.",
-        description:
-          "A calm, cinematic interface designed to help you move from idea to implementation.",
-        accent: theme.danger,
-      },
-    ],
-    [theme],
-  );
+  const slides = [
+    {
+      title: "Capture Snippets",
+      description:
+        "Save useful code, experiments, and ideas in one searchable place.",
+      code: "const user = {\n  name: 'Devansh',\n  role: 'Builder'\n};",
+    },
+    {
+      title: "Organize Everything",
+      description: "Group snippets with tags, favorites, and collections.",
+      code: "⭐ Favorites\n📁 React\n📁 Expo\n📁 Algorithms",
+    },
+    {
+      title: "Find Anything Fast",
+      description: "Search instantly across your personal code vault.",
+      code: "🔍 useMemo\n🔍 AsyncStorage\n🔍 Expo Router",
+    },
+  ];
 
   const [activeIndex, setActiveIndex] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const floatAnim = useRef(new Animated.Value(0)).current;
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  const fade = useRef(new Animated.Value(0)).current;
+  const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    Animated.parallel([
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        easing: Easing.out(Easing.cubic),
-        useNativeDriver: true,
-      }),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(floatAnim, {
-            toValue: -8,
-            duration: 1200,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-          Animated.timing(floatAnim, {
-            toValue: 8,
-            duration: 1200,
-            easing: Easing.inOut(Easing.quad),
-            useNativeDriver: true,
-          }),
-        ]),
-      ),
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.04,
-            duration: 900,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 0.98,
-            duration: 900,
-            easing: Easing.inOut(Easing.ease),
-            useNativeDriver: true,
-          }),
-        ]),
-      ),
-    ]).start();
-  }, [fadeAnim, floatAnim, pulseAnim]);
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
+    Animated.timing(fade, {
       toValue: 1,
-      duration: 240,
+      duration: 500,
+      easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start();
-  }, [activeIndex, fadeAnim]);
+  }, []);
 
-  const currentSlide = useMemo(
-    () => slides[activeIndex],
-    [activeIndex, slides],
-  );
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: (activeIndex + 1) / slides.length,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+  }, [activeIndex]);
 
   const finishOnboarding = async () => {
     await completeOnboarding();
     router.replace("/(tabs)");
   };
 
-  const handleNext = () => {
-    if (activeIndex < slides.length - 1) {
-      setActiveIndex((prev) => prev + 1);
+  const next = () => {
+    if (activeIndex === slides.length - 1) {
+      finishOnboarding();
       return;
     }
-    finishOnboarding();
+    setActiveIndex((prev) => prev + 1);
   };
 
-  const handleBack = () => {
-    setActiveIndex((prev) => Math.max(0, prev - 1));
-  };
+  const slide = slides[activeIndex];
+
+  const widthInterpolate = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0%", "100%"],
+  });
 
   return (
-    <SafeAreaView edges={["left", "right"]} style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
       <LinearGradient
-        colors={[theme.background, theme.surface, theme.codeBackground]}
-        start={{ x: 0.1, y: 0 }}
-        end={{ x: 1, y: 1 }}
+        colors={[theme.background, theme.surface]}
         style={styles.gradient}
       >
-        <View style={styles.backgroundGlow} />
-        <Animated.View
-          style={[
-            styles.orb,
-            styles.orbA,
-            { transform: [{ translateY: floatAnim }] },
-          ]}
-        />
-        <Animated.View
-          style={[
-            styles.orb,
-            styles.orbB,
-            { transform: [{ translateY: floatAnim }] },
-          ]}
-        />
+        <View style={styles.gridOverlay} />
 
-        <Animated.View
-          style={[
-            styles.shell,
-            { opacity: fadeAnim, paddingBottom: 26 + insets.bottom },
-          ]}
-        >
-          <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.eyebrow}>DevSnippet</Text>
-              <Text style={styles.title}>Welcome Laadle</Text>
+        <View style={styles.topBar}>
+          <Text style={styles.logo}>DevSnippet</Text>
+
+          <Pressable onPress={finishOnboarding}>
+            <Text style={styles.skip}>Skip</Text>
+          </Pressable>
+        </View>
+
+        <Animated.View style={[styles.content, { opacity: fade }]}>
+          <View style={styles.mockup}>
+            <View style={styles.mockupHeader}>
+              <View style={styles.dot} />
+              <View style={styles.dot} />
+              <View style={styles.dot} />
             </View>
-            <Pressable style={styles.skipButton} onPress={finishOnboarding}>
-              <Text style={styles.skipText}>Skip</Text>
-            </Pressable>
+
+            <Text style={styles.codeText}>{slide.code}</Text>
           </View>
 
-          <Animated.View
-            style={[styles.card, { transform: [{ scale: pulseAnim }] }]}
-          >
-            <View style={styles.cardHeader}>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{currentSlide.eyebrow}</Text>
-              </View>
-              <Text style={styles.cardHint}>
-                Slide {activeIndex + 1} of {slides.length}
-              </Text>
-            </View>
+          <Text style={styles.title}>{slide.title}</Text>
 
+          <Text style={styles.description}>{slide.description}</Text>
+        </Animated.View>
+
+        <View style={[styles.footer, { paddingBottom: 20 + insets.bottom }]}>
+          <View style={styles.progressTrack}>
             <Animated.View
               style={[
-                styles.visual,
-                { backgroundColor: currentSlide.accent + "22" },
+                styles.progressFill,
+                {
+                  width: widthInterpolate,
+                },
               ]}
-            >
-              <View
-                style={[
-                  styles.visualDot,
-                  { backgroundColor: currentSlide.accent },
-                ]}
-              />
-              <View style={styles.visualLines}>
-                <View
-                  style={[
-                    styles.line,
-                    { width: "55%", backgroundColor: currentSlide.accent },
-                  ]}
-                />
-                <View style={[styles.line, { width: "75%", opacity: 0.75 }]} />
-                <View style={[styles.line, { width: "45%", opacity: 0.6 }]} />
-              </View>
-            </Animated.View>
-
-            <Text style={styles.cardTitle}>{currentSlide.title}</Text>
-            <Text style={styles.cardDescription}>
-              {currentSlide.description}
-            </Text>
-
-            <View style={styles.tagRow}>
-              {["Fast search", "Smart favorites", "Beautiful UI"].map(
-                (item) => (
-                  <View key={item} style={styles.pill}>
-                    <Text style={styles.pillText}>{item}</Text>
-                  </View>
-                ),
-              )}
-            </View>
-          </Animated.View>
-
-          <View style={styles.footer}>
-            <View style={styles.dotRow}>
-              {slides.map((slide, index) => (
-                <Pressable
-                  key={slide.eyebrow}
-                  onPress={() => setActiveIndex(index)}
-                  style={[
-                    styles.dot,
-                    index === activeIndex && styles.dotActive,
-                  ]}
-                  accessibilityLabel={`Go to slide ${index + 1}`}
-                />
-              ))}
-            </View>
-
-            <View style={styles.actionRow}>
-              <Pressable
-                onPress={handleBack}
-                style={[
-                  styles.secondaryButton,
-                  activeIndex === 0 && styles.secondaryButtonDisabled,
-                ]}
-                disabled={activeIndex === 0}
-              >
-                <Text style={styles.secondaryButtonText}>Back</Text>
-              </Pressable>
-              <LinearGradient
-                colors={[theme.primary, theme.success]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.primaryButton}
-              >
-                <Pressable onPress={handleNext} style={styles.primaryPressable}>
-                  <Text style={styles.primaryButtonText}>
-                    {activeIndex === slides.length - 1
-                      ? "Start building"
-                      : "Next"}
-                  </Text>
-                </Pressable>
-              </LinearGradient>
-            </View>
+            />
           </View>
-        </Animated.View>
+
+          <Pressable style={styles.button} onPress={next}>
+            <Text style={styles.buttonText}>
+              {activeIndex === slides.length - 1
+                ? "Start Building →"
+                : "Continue →"}
+            </Text>
+          </Pressable>
+        </View>
       </LinearGradient>
     </SafeAreaView>
   );
@@ -273,212 +146,115 @@ export default function Index() {
 
 const getStyles = (theme: ColorTheme) =>
   StyleSheet.create({
-    safeArea: {
+    container: {
       flex: 1,
       backgroundColor: theme.background,
     },
+
     gradient: {
       flex: 1,
+      paddingHorizontal: 24,
     },
-    backgroundGlow: {
+
+    gridOverlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: `${theme.primary}14`,
+      opacity: 0.03,
     },
-    orb: {
-      position: "absolute",
-      borderRadius: 999,
-      opacity: 0.18,
+
+    topBar: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "center",
+      paddingTop: 20,
     },
-    orbA: {
-      top: 70,
-      left: -30,
-      width: 160,
-      height: 160,
-      backgroundColor: theme.primary,
+
+    logo: {
+      color: theme.text,
+      fontSize: 18,
+      fontWeight: "800",
     },
-    orbB: {
-      right: -45,
-      bottom: 130,
-      width: 180,
-      height: 180,
-      backgroundColor: theme.success,
+
+    skip: {
+      color: theme.textMuted,
+      fontSize: 15,
     },
-    shell: {
+
+    content: {
       flex: 1,
-      paddingHorizontal: 20,
-      paddingTop: 48,
-      paddingBottom: 26,
-      justifyContent: "space-between",
+      justifyContent: "center",
     },
-    headerRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-    },
-    eyebrow: {
-      color: theme.primaryMuted,
-      textTransform: "uppercase",
-      letterSpacing: 2,
-      fontSize: 12,
-      fontWeight: "700",
-    },
-    title: {
-      color: theme.text,
-      fontSize: 30,
-      fontWeight: "800",
-      maxWidth: 220,
-      marginTop: 4,
-    },
-    skipButton: {
-      borderRadius: 999,
-      paddingHorizontal: 12,
-      paddingVertical: 8,
-      borderWidth: 1,
-      borderColor: "rgba(255,255,255,0.14)",
-      backgroundColor: `${theme.surface}cc`,
-    },
-    skipText: {
-      color: theme.text,
-      fontWeight: "600",
-    },
-    card: {
-      borderRadius: 28,
-      padding: 18,
-      backgroundColor: `${theme.surface}f2`,
-      borderWidth: 1,
-      borderColor: `${theme.border}30`,
-      shadowColor: theme.background,
-      shadowOpacity: 0.35,
-      shadowRadius: 24,
-      shadowOffset: { width: 0, height: 18 },
-      elevation: 8,
-    },
-    cardHeader: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 14,
-    },
-    badge: {
-      borderRadius: 999,
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      backgroundColor: `${theme.primaryMuted}99`,
-    },
-    badgeText: {
-      color: theme.text,
-      fontSize: 11,
-      fontWeight: "700",
-      textTransform: "uppercase",
-      letterSpacing: 1.1,
-    },
-    cardHint: {
-      color: theme.textMuted,
-      fontSize: 12,
-      fontWeight: "600",
-    },
-    visual: {
+
+    mockup: {
+      backgroundColor: theme.surface,
       borderRadius: 24,
-      padding: 14,
-      minHeight: 120,
-      justifyContent: "center",
-      marginBottom: 14,
-    },
-    visualDot: {
-      width: 18,
-      height: 18,
-      borderRadius: 9,
-      marginBottom: 10,
-    },
-    visualLines: {
-      gap: 8,
-    },
-    line: {
-      height: 8,
-      borderRadius: 999,
-      backgroundColor: "rgba(255,255,255,0.8)",
-    },
-    cardTitle: {
-      color: theme.text,
-      fontSize: 24,
-      fontWeight: "800",
-      lineHeight: 30,
-      marginBottom: 8,
-    },
-    cardDescription: {
-      color: theme.textMuted,
-      fontSize: 14,
-      lineHeight: 20,
-      marginBottom: 16,
-    },
-    tagRow: {
-      flexDirection: "row",
-      flexWrap: "wrap",
-      gap: 8,
-    },
-    pill: {
-      paddingHorizontal: 10,
-      paddingVertical: 6,
-      borderRadius: 999,
-      backgroundColor: `${theme.border}33`,
+      padding: 20,
       borderWidth: 1,
-      borderColor: `${theme.border}4d`,
+      borderColor: theme.border,
+      minHeight: 220,
+      marginBottom: 40,
     },
-    pillText: {
-      color: theme.text,
-      fontSize: 12,
-      fontWeight: "600",
-    },
-    footer: {
-      gap: 14,
-    },
-    dotRow: {
+
+    mockupHeader: {
       flexDirection: "row",
-      justifyContent: "center",
-      gap: 8,
+      gap: 6,
+      marginBottom: 18,
     },
+
     dot: {
       width: 10,
       height: 10,
       borderRadius: 999,
-      backgroundColor: `${theme.border}66`,
+      backgroundColor: theme.textMuted,
     },
-    dotActive: {
-      width: 24,
-      backgroundColor: theme.primary,
-    },
-    actionRow: {
-      flexDirection: "row",
-      gap: 10,
-    },
-    secondaryButton: {
-      flex: 1,
-      borderRadius: 16,
-      paddingVertical: 14,
-      alignItems: "center",
-      borderWidth: 1,
-      borderColor: `${theme.border}40`,
-      backgroundColor: `${theme.surface}a6`,
-    },
-    secondaryButtonDisabled: {
-      opacity: 0.45,
-    },
-    secondaryButtonText: {
+
+    codeText: {
       color: theme.text,
-      fontWeight: "700",
+      fontSize: 15,
+      lineHeight: 28,
+      fontFamily: "monospace",
     },
-    primaryButton: {
-      flex: 1,
-      borderRadius: 16,
+
+    title: {
+      color: theme.text,
+      fontSize: 36,
+      fontWeight: "900",
+      marginBottom: 14,
+    },
+
+    description: {
+      color: theme.textMuted,
+      fontSize: 17,
+      lineHeight: 28,
+    },
+
+    footer: {
+      gap: 20,
+    },
+
+    progressTrack: {
+      height: 6,
+      borderRadius: 999,
+      backgroundColor: theme.border,
       overflow: "hidden",
     },
-    primaryPressable: {
-      paddingVertical: 14,
+
+    progressFill: {
+      height: "100%",
+      backgroundColor: theme.primary,
+      borderRadius: 999,
+    },
+
+    button: {
+      height: 58,
+      borderRadius: 29,
+      backgroundColor: theme.primary,
+      justifyContent: "center",
       alignItems: "center",
     },
-    primaryButtonText: {
-      color: theme.text,
+
+    buttonText: {
+      color: "#fff",
+      fontSize: 16,
       fontWeight: "800",
-      fontSize: 15,
     },
   });

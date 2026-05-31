@@ -5,11 +5,13 @@ import { initDB } from "../../src/core/database/schema";
 import { initFileSystem } from "../../src/core/filesystem/fileManager";
 import { useSettingsStore } from "../../src/features/settings/store";
 import { useSnippetStore } from "../../src/features/snippets/store";
+import { Colors } from "../../src/shared/theme/colors";
 
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const isFirstLaunched = useSettingsStore((state) => state.isFirstLaunched);
+  const theme = Colors[useSettingsStore((state) => state.theme)];
 
   useEffect(() => {
     const bootApp = async () => {
@@ -31,8 +33,15 @@ export default function RootLayout() {
 
   if (error) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ color: "red" }}>{error}</Text>
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: theme.background,
+        }}
+      >
+        <Text style={{ color: theme.danger }}>{error}</Text>
       </View>
     );
   }
@@ -44,11 +53,11 @@ export default function RootLayout() {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: "#0d1117",
+          backgroundColor: theme.background,
         }}
       >
-        <ActivityIndicator size="large" color="#58a6ff" />
-        <Text style={{ color: "#c9d1d9", marginTop: 16 }}>
+        <ActivityIndicator size="large" color={theme.primary} />
+        <Text style={{ color: theme.textMuted, marginTop: 16 }}>
           Hydrating State...
         </Text>
       </View>

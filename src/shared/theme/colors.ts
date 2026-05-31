@@ -1,41 +1,27 @@
 export const Colors = {
   light: {
-    // Structural
-    background: "#f6f8fa",
-    surface: "#ffffff", // Cards, modals, input backgrounds
-    border: "#d0d7de",
-
-    // Typography
-    text: "#24292f", // Primary headings and body
-    textMuted: "#57606a", // Secondary text, timestamps
-
-    // Actions & States
-    primary: "#0969da", // Main buttons, active tabs
-    primaryMuted: "#ddeeff", // Background for active items
-    danger: "#cf222e", // Delete buttons, error states
-    success: "#1a7f37", // Save success, online indicators
-
-    // Code specific
-    codeBackground: "#eff1f3",
+    background: "#ffffff",
+    surface: "#f4f4f5",
+    border: "#e4e4e7",
+    text: "#09090b",
+    textMuted: "#71717a",
+    primary: "#ff5a00", 
+    primaryMuted: "#ffedd5",
+    danger: "#ef4444",
+    success: "#10b981",
+    codeBackground: "#f4f4f5",
   },
   dark: {
-    // Structural
-    background: "#0d1117",
-    surface: "#161b22",
-    border: "#30363d",
-
-    // Typography
-    text: "#c9d1d9",
-    textMuted: "#8b949e",
-
-    // Actions & States
-    primary: "#58a6ff",
-    primaryMuted: "#1f3a5f",
-    danger: "#f85149",
-    success: "#2ea043",
-
-    // Code specific
-    codeBackground: "#010409",
+    background: "#000000",
+    surface: "#121212",
+    border: "#27272a",
+    text: "#ffffff",
+    textMuted: "#a1a1aa",
+    primary: "#ff5a00",
+    primaryMuted: "#431407",
+    danger: "#f87171",
+    success: "#34d399",
+    codeBackground: "#09090b",
   },
 };
 
